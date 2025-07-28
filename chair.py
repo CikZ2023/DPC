@@ -149,20 +149,20 @@ def combine_coco_instances(annotation_path):
                      'annotations': val_instances['annotations'] + train_instances['annotations']}
 
     return all_instances
-# 读取同义词
+
 def load_synonyms(synonyms_txt):
     synonyms = synonyms_txt.splitlines()
     synonyms = [s.strip().split(', ') for s in synonyms if s.strip()]
-    mscoco_objects = set()  # 使用集合去重
+    mscoco_objects = set()
     inverse_synonym_dict = {}
     for synonym in synonyms:
         main_word = synonym[0]
-        mscoco_objects.update(synonym)  # 添加所有同义词到集合
+        mscoco_objects.update(synonym)
         for s in synonym:
             inverse_synonym_dict[s] = main_word
     return list(mscoco_objects), inverse_synonym_dict
 
-# 定义一个函数来获取WordNet的词性
+
 def get_wordnet_pos(tag):
     if tag.startswith('J'):
         return wordnet.ADJ
@@ -173,9 +173,9 @@ def get_wordnet_pos(tag):
     elif tag.startswith('R'):
         return wordnet.ADV
     else:
-        return wordnet.NOUN  # 默认返回名词
+        return wordnet.NOUN
 
-# 重写的 caption_to_words 函数
+
 def caption_to_words(caption, mscoco_objects, inverse_synonym_dict):
     '''
     Input: caption
@@ -200,9 +200,9 @@ def caption_to_words(caption, mscoco_objects, inverse_synonym_dict):
             double_words.append(double_word)
         else:
             double_words.append(words[i])
-    double_words.append(words[-1])  # 添加最后一个词
+    double_words.append(words[-1])
 
-    # 替换同义词
+
     node_words = []
     for word in double_words:
         if word in inverse_synonym_dict:

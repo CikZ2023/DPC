@@ -73,7 +73,7 @@ def llama_new_forward(
         attn_weights = torch.max(
             attn_weights, torch.tensor(torch.finfo(attn_weights.dtype).min)
         )
-        #添加一个属性来检查是否已经保存了原始的attention_weights
+
         if not hasattr(self, 'has_saved_original_attn_weights'):
             self.has_saved_original_attn_weights = False
 
@@ -83,7 +83,7 @@ def llama_new_forward(
             self.has_saved_original_attn_weights = True
 
 
-    ### PAI's modification
+
     if hasattr(self, "use_attn"):
         use_attn = self.use_attn
         img_start_idx = self.img_start_idx
@@ -110,7 +110,7 @@ def llama_new_forward(
                 attn_weights[:, :, -1, text_start_idx:text_end_idx_before_img].abs() * (-1*self.b) + attn_weights[:, :, -1, text_start_idx:text_end_idx_before_img]
         )
 
-        # 降低图像后文本标记的注意力
+
         attn_weights[:, :, -1, text_start_idx_after_img:text_end_idx] = (
                 attn_weights[:, :, -1, text_start_idx_after_img:text_end_idx].abs() * (-1*self.b) + attn_weights[:, :, -1, text_start_idx_after_img:text_end_idx]
         )
@@ -126,7 +126,7 @@ def llama_new_forward(
                                                                                                            text_start_idx:text_end_idx_before_img]
         )
 
-        # 降低图像后文本标记的注意力
+
         attn_weights[:, :, -1, text_start_idx_after_img:text_end_idx] = (
                 attn_weights[:, :, -1, text_start_idx_after_img:text_end_idx].abs() * self.b + attn_weights[
                                                                                                           :, :, -1,
