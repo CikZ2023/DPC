@@ -3,7 +3,7 @@ from collections import namedtuple
 
 import torch
 import yaml
-from CFG import CFGLogits
+
 from constants import (
     DEFAULT_IMAGE_PATCH_TOKEN,
     IMAGE_TOKEN_INDEX,
@@ -17,10 +17,9 @@ from llava.mm_utils import get_model_name_from_path
 from llava.model.builder import load_pretrained_model
 from minigpt4.common.eval_utils import init_model
 from mllm.models import load_pretrained
-from DACD import ContrastiveLogitsProcessor
-from ACD import acd
+
 from DCD import dcd
-# from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration, TextIteratorStreamer
+
 def load_model_args_from_yaml(yaml_path):
     with open(yaml_path, "r") as file:
         data = yaml.safe_load(file)
@@ -299,11 +298,6 @@ class ModelLoader:
             self.tokenizer, self.vlm_model, self.image_processor, self.llm_model = (
                 load_shikra_model(yaml_path)
             )
-        # elif self.model_name == "qwen":
-        #     model_path = os.path.expanduser("/home/ubuntu/data-disk/czh/Qwen2.5-VL-7B-Instruct")
-        #     self.tokenizer, self.vlm_model, self.image_processor, self.llm_model = (
-        #         load_qwen_model(model_path)
-        #     )
 
         else:
             raise ValueError(f"Unknown model: {self.model}")

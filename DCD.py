@@ -72,17 +72,15 @@ class dcd(LogitsProcessor):
         self.base_array = np.load('./llava_array.npy')
 
     def get_current_attentions(self):
-        """获取当前所有层的注意力权重"""
         attentions = {}
 
-        # 从activations_中获取
+
         if hasattr(self.model.model, 'activations_'):
             for layer_idx in range(0, self.end_layer):
                 key = f"attn_out_{layer_idx}"
                 if key in self.model.model.activations_:
                     attn_list = self.model.model.activations_[key]
                     if attn_list:
-                        # 获取最新的注意力权重
                         attentions[layer_idx] = attn_list[-1]
 
         return attentions
@@ -105,13 +103,11 @@ class dcd(LogitsProcessor):
             layer_wise_ratios.append(avg_layer_ratio)
             global_ratio += avg_layer_ratio
 
-        # global_ratio /= num_layers
-
         return layer_wise_ratios
 
     def adjust_layer_parameters(self, layer_wise_ratios):
         for i in range(self.start_layer, self.end_layer):
-            layer_index = i - self.start_layer  # 调整索引以匹配 layer_wise_ratios
+            layer_index = i - self.start_layer
 
             x = layer_wise_ratios[layer_index]
             y = self.base_array[layer_index]
@@ -120,11 +116,10 @@ class dcd(LogitsProcessor):
                 delta = self.T * (abs(x - y) / y)
                 self.model.model.layers[i].self_attn.alpha = min(0.6, self.alpha + delta)
                 self.model.model.layers[i].self_attn.b = min(0.6, self.b + delta)
-            else:  # 不明显的层
+            else:
                 self.model.model.layers[i].self_attn.alpha = self.alpha
                 self.model.model.layers[i].self_attn.b = self.b
     def clear_attention_caches(self):
-        # 清除所有存储的注意力权重和缓存
         for layer in self.model.model.layers:
             if hasattr(layer.self_attn, 'has_saved_original_attn_weights'):
                 layer.self_attn.has_saved_original_attn_weights = False
@@ -133,9 +128,7 @@ class dcd(LogitsProcessor):
             if hasattr(layer.self_attn, 'attention_cache'):
                 layer.self_attn.attention_cache = []
 
-        # 如果模型有 activations_ 字典，也要清除
         if hasattr(self.model.model, 'activations_'):
-            # 仅清除注意力输出，而不是所有激活
             keys_to_clear = [k for k in self.model.model.activations_ if k.startswith('attn_out_')]
             for k in keys_to_clear:
                 self.model.model.activations_[k] = []
@@ -148,10 +141,9 @@ class dcd(LogitsProcessor):
         if self.guidance_scale == 1:
             return scores
 
-        # 获取当前的注意力权重
+        # get current attention
         current_attentions = self.get_current_attentions()
         if current_attentions:
-            # 方法1：将所有层的注意力权重堆叠成一个大张量
             attention_list = []
             layer_indices = []
 
@@ -161,8 +153,6 @@ class dcd(LogitsProcessor):
                 layer_indices.append(layer_idx)
 
             if attention_list:
-                # 堆叠所有层的注意力权重
-                # 结果形状: [num_layers, batch_size, num_heads, seq_len, seq_len]
                 stacked_attentions = torch.stack(attention_list, dim=0)
             v_attnw_matrix, t_attnw_matrix, attnw_matrix = extract_attention_weights(stacked_attentions,self.model_loader)
 
@@ -174,6 +164,7 @@ class dcd(LogitsProcessor):
                 layer.self_attn.attention_cache = []
         layer_wise_ratios = self.calculate_attention_ratios(v_attnw_matrix.cpu().numpy(),t_attnw_matrix.cpu().numpy())
 
+        # visual-favored path
         for i in range(self.start_layer, self.end_layer):
             self.model.model.layers[i].self_attn.use_cfg = True
             self.model.model.layers[i].self_attn.use_attn = True
@@ -196,12 +187,11 @@ class dcd(LogitsProcessor):
 
         image_focus_logits = F.log_softmax(self.output1.logits[:, -1, :], dim=-1)
 
-
-
+        # text-favored path
         for i in range(self.start_layer, self.end_layer):
             self.model.model.layers[i].self_attn.use_cfg = False
             self.model.model.layers[i].self_attn.use_attn = True
-            # self.adjust_layer_parameters(layer_wise_ratios)
+
         if self.output2 is None:
             if self.input_type == "inputs_ids":
                 self.output2 = self.model(input_ids=self.prompt_tokens, images=self.image[0], use_cache=True)
