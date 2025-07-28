@@ -19,7 +19,7 @@ from minigpt4.common.eval_utils import init_model
 from mllm.models import load_pretrained
 from DACD import ContrastiveLogitsProcessor
 from ACD import acd
-from ACD_zxy import acd_zxy
+from DCD import dcd
 # from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration, TextIteratorStreamer
 def load_model_args_from_yaml(yaml_path):
     with open(yaml_path, "r") as file:
@@ -49,15 +49,6 @@ def load_minigpt4_model(cfg_path):
     # TODO:
     # model.eval()
     return model.llama_tokenizer, model, vis_processor, model.llama_model
-# def load_qwen_model(model_path):
-#     # 加载 Qwen2.5-VL 模型和处理器
-#     model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-#         model_path, torch_dtype="auto", device_map="auto"
-#     )
-#     processor = AutoProcessor.from_pretrained(model_path)
-#
-#     # 返回 tokenizer（processor）、vlm_model（Qwen2.5-VL）、image_processor（processor）和 llm_model（Qwen2.5-VL）
-#     return processor, model, processor, model
 
 def load_shikra_model(yaml_path):
     model_args, training_args = load_model_args_from_yaml(yaml_path)
@@ -278,9 +269,6 @@ def prepare_shikra_inputs(template, query, image, tokenizer):
     return qu, img_start_idx, img_end_idx, kwargs
 
 
-# Example usage:
-# prepare_inputs_for_model(args, image, model, tokenizer, kwargs)
-
 
 class ModelLoader:
     def __init__(self, model_name,load_in_8bit=False, load_in_4bit=False):
@@ -354,126 +342,7 @@ class ModelLoader:
 
         return questions,kwargs
 
-    def init_cfg_processor(self, questions, gamma=1.1, beam=1, start_layer=0, end_layer=32):
-        if self.model_name == "minigpt4":
-            chunks = [q.split("<Img><ImageHere></Img>") for q in questions]
-        elif self.model_name == "llava-1.5":
-            chunks = [q.split("<ImageHere>") for q in questions]
-        elif self.model_name == "shikra":
-            split_token = (
-                "<im_start>"
-                + DEFAULT_IMAGE_PATCH_TOKEN * SHIKRA_IMAGE_TOKEN_LENGTH
-                + "<im_end>"
-            )
-            chunks = [q.split(split_token) for q in questions]
-        else:
-            raise ValueError(f"Unknown model: {self.model_name}")
-        chunk_before = [chunk[0] for chunk in chunks]
-        chunk_after = [chunk[1] for chunk in chunks]
-
-        token_before = self.tokenizer(
-            chunk_before,
-            return_tensors="pt",
-            padding="longest",
-            add_special_tokens=False,
-        ).input_ids.to("cuda")
-        token_after = self.tokenizer(
-            chunk_after,
-            return_tensors="pt",
-            padding="longest",
-            add_special_tokens=False,
-        ).input_ids.to("cuda")
-
-        batch_size = len(questions)
-        bos = (
-            torch.ones(
-                [batch_size, 1], dtype=token_before.dtype, device=token_before.device
-            )
-            * self.tokenizer.bos_token_id
-        )
-        neg_promt = torch.cat([bos, token_before, token_after], dim=1)
-        neg_promt = neg_promt.repeat(beam, 1)
-        logits_processor = CFGLogits(gamma, neg_promt.to("cuda"), self.llm_model, start_layer=start_layer, end_layer=end_layer)
-
-        return logits_processor
-
-    # def init_czh_processor(self,kwargs,questions, gamma=1.3, beam=1, start_layer=0, end_layer=32, use_attn=True, alpha=0.2, use_cfg=True):
-    #     tokens = self.tokenizer(
-    #         questions,
-    #         return_tensors="pt",
-    #         padding="longest",
-    #         add_special_tokens=True,
-    #     ).input_ids.to("cuda")
-    #
-    #     prompt_tokens = tokens.repeat(beam, 1)
-    #
-    #     img_start_idx=self.img_start_idx
-    #     img_end_idx=self.img_end_idx
-    #     text_start_idx=self.text_start_idx
-    #     text_end_idx_before_img=self.text_end_idx_before_img
-    #     text_start_idx_after_img=self.text_start_idx_after_img
-    #     text_end_idx=self.text_end_idx
-    #
-    #     logits_processor = ContrastiveLogitsProcessor(
-    #         kwargs=kwargs,
-    #         guidance_scale=gamma,
-    #         prompt_tokens=prompt_tokens.to("cuda"),
-    #         model=self.llm_model,
-    #         start_layer=start_layer,
-    #         end_layer=end_layer,
-    #         use_attn=use_attn,
-    #         alpha=alpha,
-    #         use_cfg=use_cfg,
-    #         img_start_idx=img_start_idx,
-    #         img_end_idx=img_end_idx,
-    #         text_start_idx=text_start_idx,
-    #         text_end_idx_before_img=text_end_idx_before_img,
-    #         text_start_idx_after_img=text_start_idx_after_img,
-    #         text_end_idx=text_end_idx,
-    #
-    #     )
-    #
-    #     return logits_processor
-    def init_czh_processor(self,kwargs, questions, gamma=1.1, beam=1, start_layer=0, end_layer=32, use_attn=True,
-                           alpha=0.2,b=0.2, use_cfg=True):
-        tokens = self.tokenizer(
-            questions,
-            return_tensors="pt",
-            padding="longest",
-            add_special_tokens=True,
-        ).input_ids.to("cuda")
-
-        prompt_tokens = tokens.repeat(beam, 1)
-
-        img_start_idx = self.img_start_idx
-        img_end_idx = self.img_end_idx
-        text_start_idx = self.text_start_idx
-        text_end_idx_before_img = self.text_end_idx_before_img
-        text_start_idx_after_img = self.text_start_idx_after_img
-        text_end_idx = self.text_end_idx
-
-        logits_processor = ContrastiveLogitsProcessor(
-            kwargs=kwargs,
-            guidance_scale=gamma,
-            prompt_tokens=prompt_tokens.to("cuda"),
-            model=self.llm_model,
-            start_layer=start_layer,
-            end_layer=end_layer,
-            use_attn=use_attn,
-            alpha=alpha,
-            b = b,
-            use_cfg=use_cfg,
-            # img_start_idx=img_start_idx,
-            # img_end_idx=img_end_idx,
-            # text_start_idx=text_start_idx,
-            # text_end_idx_before_img=text_end_idx_before_img,
-            # text_start_idx_after_img=text_start_idx_after_img,
-            # text_end_idx=text_end_idx,
-
-        )
-
-        return logits_processor
-    def init_zxy_processor(self,kwargs, questions, gamma=1.1, beam=1, start_layer=0, end_layer=32, use_attn=True,
+    def init_dcd_processor(self,kwargs, questions, gamma=1.1, beam=1, start_layer=0, end_layer=32, use_attn=True,
                            alpha=0.2,b=0.2, use_cfg=True,model_loader=None):
         tokens = self.tokenizer(
             questions,
@@ -484,14 +353,7 @@ class ModelLoader:
 
         prompt_tokens = tokens.repeat(beam, 1)
 
-        img_start_idx = self.img_start_idx
-        img_end_idx = self.img_end_idx
-        text_start_idx = self.text_start_idx
-        text_end_idx_before_img = self.text_end_idx_before_img
-        text_start_idx_after_img = self.text_start_idx_after_img
-        text_end_idx = self.text_end_idx
-
-        logits_processor = acd_zxy(
+        logits_processor = dcd(
             kwargs=kwargs,
             guidance_scale=gamma,
             prompt_tokens=prompt_tokens.to("cuda"),
@@ -503,53 +365,6 @@ class ModelLoader:
             b = b,
             use_cfg=use_cfg,
             model_loader=model_loader,
-
-            # img_start_idx=img_start_idx,
-            # img_end_idx=img_end_idx,
-            # text_start_idx=text_start_idx,
-            # text_end_idx_before_img=text_end_idx_before_img,
-            # text_start_idx_after_img=text_start_idx_after_img,
-            # text_end_idx=text_end_idx,
-
-        )
-
-        return logits_processor
-    def init_acd_processor(self,kwargs, questions, gamma=1.1, beam=1, start_layer=0, end_layer=32, use_attn=True,
-                           alpha=0.2,b=0.2, use_cfg=True):
-        tokens = self.tokenizer(
-            questions,
-            return_tensors="pt",
-            padding="longest",
-            add_special_tokens=True,
-        ).input_ids.to("cuda")
-
-        prompt_tokens = tokens.repeat(beam, 1)
-
-        img_start_idx = self.img_start_idx
-        img_end_idx = self.img_end_idx
-        text_start_idx = self.text_start_idx
-        text_end_idx_before_img = self.text_end_idx_before_img
-        text_start_idx_after_img = self.text_start_idx_after_img
-        text_end_idx = self.text_end_idx
-
-        logits_processor = acd(
-            kwargs=kwargs,
-            guidance_scale=gamma,
-            prompt_tokens=prompt_tokens.to("cuda"),
-            model=self.llm_model,
-            start_layer=start_layer,
-            end_layer=end_layer,
-            use_attn=use_attn,
-            alpha=alpha,
-            b = b,
-            use_cfg=use_cfg,
-            # img_start_idx=img_start_idx,
-            # img_end_idx=img_end_idx,
-            # text_start_idx=text_start_idx,
-            # text_end_idx_before_img=text_end_idx_before_img,
-            # text_start_idx_after_img=text_start_idx_after_img,
-            # text_end_idx=text_end_idx,
-
         )
 
         return logits_processor

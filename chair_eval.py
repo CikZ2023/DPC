@@ -6,11 +6,11 @@ import random
 import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
-from text_attention_zxy import llama_modify
+from attention_intervention import llama_modify
 from constants import INSTRUCTION_TEMPLATE, SYSTEM_MESSAGE
 from eval_data_loader import COCODataSet
 from llava.utils import disable_torch_init
-from model_loader_text import ModelLoader
+from model_loader import ModelLoader
 from tqdm import tqdm
 from transformers.generation.logits_process import LogitsProcessorList
 from torch.utils.data import Subset
@@ -105,8 +105,6 @@ if args.model == "llava-1.5" or args.model == "shikra":
     template = SYSTEM_MESSAGE + template
 print(1)
 for batch_id, data in tqdm(enumerate(random_500_loader_from_file), total=len(random_500_loader_from_file)):
-
-
     if batch_id == 500:
         break
     img_id = data["img_id"]
@@ -138,7 +136,7 @@ for batch_id, data in tqdm(enumerate(random_500_loader_from_file), total=len(ran
     hooks = set_act_get_hooks1(model_loader.llm_model.model, attn_out=True)
 
     logits_processor = (
-        model_loader.init_zxy_processor(kwargs,questions,args.gamma, args.beam, args.start_layer, args.end_layer,args.use_attn,args.alpha,args.b,args.use_cfg,model_loader)
+        model_loader.init_dcd_processor(kwargs,questions,args.gamma, args.beam, args.start_layer, args.end_layer,args.use_attn,args.alpha,args.b,args.use_cfg,model_loader)
     )
     if logits_processor is not None:
         kwargs["logits_processor"] = LogitsProcessorList([logits_processor])
