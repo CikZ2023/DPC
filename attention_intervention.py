@@ -4,7 +4,6 @@ from typing import Optional, Tuple
 
 import torch
 import torch.nn as nn
-from torch import tensor
 from transformers.models.llama.modeling_llama import apply_rotary_pos_emb
 
 
@@ -103,24 +102,6 @@ def llama_new_forward(
         use_cfg = self.use_cfg
     else:
         use_cfg = False
-
-
-    # # 平均
-    # avg_value = torch.mean(attn_weights, dim=(2, 3), keepdim=True)
-    # attn_weights = avg_value.expand(batch_size, num_heads, height, width)
-
-
-
-    if use_attn and use_cfg:
-
-        # batch_size, num_heads, height, width = attn_weights.shape
-        # # # 随机
-        # attn_weights = torch.rand(batch_size, num_heads, height, width, device=attn_weights.device) * 2
-
-        # print(attn_weights.shape)
-        #
-        # print(attn_weights[:, :, -1, img_start_idx+2].abs())
-        # print(self.alpha)
         attn_weights[:, :, -1, img_start_idx:img_end_idx] = (
             attn_weights[:, :, -1, img_start_idx:img_end_idx].abs() * self.alpha
             + attn_weights[:, :, -1, img_start_idx:img_end_idx]
@@ -151,37 +132,6 @@ def llama_new_forward(
                                                                                                           :, :, -1,
                                                                                                           text_start_idx_after_img:text_end_idx]
         )
-    # print("a",self.alpha)
-    # print("b",self.b)
-
-
-
-        # print(attn_weights[:, :, -1, img_start_idx+2].abs())
-    # else:
-    #
-    #     attn_weights[:, :, -1, img_start_idx:img_end_idx] = (
-    #             attn_weights[:, :, -1, img_start_idx:img_end_idx].abs() * (-self.alpha)
-    #             + attn_weights[:, :, -1, img_start_idx:img_end_idx]
-    #     )
-    #     attn_weights[:, :, -1, text_start_idx:text_end_idx_before_img] = (
-    #             attn_weights[:, :, -1, text_start_idx:text_end_idx_before_img].abs() * (
-    #                 self.alpha) + attn_weights[:, :, -1, text_start_idx:text_end_idx_before_img]
-    #     )
-    #
-    #     # 降低图像后文本标记的注意力
-    #     attn_weights[:, :, -1, text_start_idx_after_img:text_end_idx] = (
-    #             attn_weights[:, :, -1, text_start_idx_after_img:text_end_idx].abs() * (
-    #                 self.alpha) + attn_weights[:, :, -1, text_start_idx_after_img:text_end_idx]
-    #     )
-
-
-
-
-
-
-
-    ### PAI's modification
-
 
     attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(
         query_states.dtype
