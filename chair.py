@@ -27,11 +27,6 @@ from collections import defaultdict
 custom_path = '/media/data/czh/nltk_data'
 
 
-
-
-
-
-# copied from: https://github.com/LisaAnne/Hallucination/blob/master/data/synonyms.txt
 synonyms_txt = '''
 person, girl, boy, man, woman, kid, child, chef, baker, people, adult, rider, children, baby, worker, passenger, sister, biker, policeman, cop, officer, lady, cowboy, bride, groom, male, female, guy, traveler, mother, father, gentleman, pitcher, player, skier, snowboarder, skater, skateboarder, person, woman, guy, foreigner, child, gentleman, caller, offender, coworker, trespasser, patient, politician, soldier, grandchild, serviceman, walker, drinker, doctor, bicyclist, thief, buyer, teenager, student, camper, driver, solider, hunter, shopper, villager
 bicycle, bike, bicycle, bike, unicycle, minibike, trike
@@ -182,7 +177,6 @@ def caption_to_words(caption, mscoco_objects, inverse_synonym_dict):
     Output: MSCOCO words in the caption
     '''
 
-    # 标准预处理
     words = nltk.word_tokenize(caption.lower())
     tagged_sent = nltk.pos_tag(words)
     lemmas_sent = []
@@ -192,7 +186,6 @@ def caption_to_words(caption, mscoco_objects, inverse_synonym_dict):
         lemmas_sent.append(wnl.lemmatize(tag[0], pos=wordnet_pos))
     words = lemmas_sent
 
-    # 替换双词
     double_words = []
     for i in range(len(words) - 1):
         double_word = ' '.join(words[i:i+2])
