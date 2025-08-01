@@ -94,7 +94,7 @@ def eval_model(args):
 
             if args.single_pred_prompt:
                 if args.lang == 'cn':
-                    qs = qs + '\n' + "请直接回答选项字母。"
+                    qs = qs + '\n' + "Answer with the option's letter from the given choices directly."
                 else:
                     qs = qs + '\n' + "Answer with the option's letter from the given choices directly."
 
