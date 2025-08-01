@@ -77,12 +77,9 @@ def llama_new_forward(
         if not hasattr(self, 'has_saved_original_attn_weights'):
             self.has_saved_original_attn_weights = False
 
-        # 如果是第一次计算，保存原始的attention_weights
         if not self.has_saved_original_attn_weights:
             self.original_attention_weights = attn_weights.clone().detach()
             self.has_saved_original_attn_weights = True
-
-
 
     if hasattr(self, "use_attn"):
         use_attn = self.use_attn
