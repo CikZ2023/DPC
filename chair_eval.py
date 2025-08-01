@@ -17,10 +17,7 @@ from torch.utils.data import Subset
 from utils import set_act_get_hooks1, remove_hooks
 import gc
 
-
-
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-
 def setup_seeds():
     seed = 927
 
@@ -31,7 +28,6 @@ def setup_seeds():
     cudnn.benchmark = False
     cudnn.deterministic = True
 
-
 parser = argparse.ArgumentParser(description="CHAIR evaluation on LVLMs.")
 parser.add_argument("--model", type=str, help="model")
 parser.add_argument(
@@ -41,7 +37,7 @@ parser.add_argument(
     "in xxx=yyy format will be merged into config file (deprecate), "
     "change to --cfg-options instead.",
 )
-# TODO
+
 parser.add_argument(
     "--data-path",
     type=str,
@@ -78,12 +74,13 @@ coco_loader = torch.utils.data.DataLoader(
     coco_dataset, batch_size=args.batch_size, shuffle=False, num_workers=32
 )
 
+random_500_indices = random.sample(range(len(coco_dataset)), 500)
+with open('random_500_indices_2.json', 'w') as f:
+    json.dump(random_500_indices, f)
 
-# 读取这些索引并使用它们来构建新的DataLoader
 with open('random_500_indices_2.json', 'r') as f:
     loaded_indices = json.load(f)
 
-# 使用加载的索引构建新的DataLoader
 random_500_loader_from_file = torch.utils.data.DataLoader(
     Subset(coco_dataset, loaded_indices),
     batch_size=args.batch_size, shuffle=False, num_workers=32
