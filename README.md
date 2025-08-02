@@ -14,6 +14,6 @@ where:
 - $\lambda$ is a tunable contrastive weight.
  ## 🎯 Causal Modeling of Object Hallucination Process
 The proposed SCM for hallucination analysis in LVLMs. Visual input ($X_V$) and text input ($X_T$) affect the output ($Y_T$) through visual ($A_V$) and text attention ($A_T$). Visual ($P_V$) and language priors ($P_T$) confound the attention paths and may cause hallucinations. Interventions on $A_V$ and $A_T$ help assess their causal impact.
-![SCM](fig/df5e1eacbf7b9a3b5a6e190546ef6344.png?width=100)
+![SCM](fig/scm.PNG)
 isualization of dual-path attention intervention.Compared to the original attention, the visual and text favored paths highlight distinct modality preferences in token-level attention.
 ![attention](fig/59e7b5f4b41cd2856d7d94de818b015f.jpg)
