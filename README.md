@@ -1,4 +1,5 @@
-## 🎯 Owl Overview
+## <img src="fig/owl.svg" width="40" alt="Owl Logo">     Owl Overview
+
 ![DPC](fig/565d4f952397b052549817ebab404338.jpg)
 
 - We introduce a dual-path contrastive decoding strategy: one path enhances visually grounded predictions, while the other amplifies hallucinations - allowing the model to "let truth shine and hallucination collapse".
